@@ -5,28 +5,29 @@ import (
 	"time"
 
 	"github.com/kataras/iris"
-	"github.com/paked/configure"
+	"github.com/plimble/flagenv"
 	"github.com/plimble/messenger"
 )
 
-var (
-	conf        = configure.New()
-	verifyToken = conf.String("verify-token", "somsri-plimble-r422", "The token used to verify facebook")
-	pageToken   = conf.String("page-token", "", "The token that is used to verify the page on facebook")
-)
+type Config struct {
+	VerifyToken string
+	PageToken   string
+}
 
 func main() {
 	server := iris.New()
-	conf.Use(configure.NewFlag())
-	conf.Use(configure.NewEnvironment())
 
-	conf.Parse()
+	conf := Config{}
+	fe := flagenv.New()
+	fe.AddString("verify-token", "somsri-plimble-r422", "The token used to verify facebook")
+	fe.AddString("page-token", "", "The token that is used to verify the page on facebook")
+	fe.Parse(&conf)
 
 	// Create a new messenger client
-	client := messenger.New(*verifyToken)
+	client := messenger.New(conf.VerifyToken)
 
 	client.OnGetPageToken(func(pageID int64) (string, error) {
-		return *pageToken, nil
+		return conf.PageToken, nil
 	})
 
 	client.OnMessage(func(m *messenger.Messenger, msg messenger.Message, r *messenger.Response) {
